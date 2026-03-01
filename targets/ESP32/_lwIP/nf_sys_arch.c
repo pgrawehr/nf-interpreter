@@ -30,7 +30,7 @@ static const char* TAG = "lwip_arch";
 static sys_mutex_t g_lwip_protect_mutex = NULL;
 
 static pthread_key_t sys_thread_sem_key;
-static void sys_thread_sem_free(void* data);
+static void disabled_sys_thread_sem_free(void* data);
 
 #if !LWIP_COMPAT_MUTEX
 
@@ -41,7 +41,7 @@ static void sys_thread_sem_free(void* data);
  * @return ERR_OK on success, ERR_MEM when out of memory
  */
 err_t
-sys_mutex_new(sys_mutex_t *pxMutex)
+disabled_sys_mutex_new(sys_mutex_t *pxMutex)
 {
   *pxMutex = xSemaphoreCreateMutex();
   if (*pxMutex == NULL) {
@@ -60,7 +60,7 @@ sys_mutex_new(sys_mutex_t *pxMutex)
  * @param pxMutex pointer of mutex to lock
  */
 void
-sys_mutex_lock(sys_mutex_t *pxMutex)
+disabled_sys_mutex_lock(sys_mutex_t *pxMutex)
 {
   BaseType_t ret = xSemaphoreTake(*pxMutex, portMAX_DELAY);
 
@@ -74,7 +74,7 @@ sys_mutex_lock(sys_mutex_t *pxMutex)
  * @param pxMutex pointer of mutex to unlock
  */
 void
-sys_mutex_unlock(sys_mutex_t *pxMutex)
+disabled_sys_mutex_unlock(sys_mutex_t *pxMutex)
 {
   BaseType_t ret = xSemaphoreGive(*pxMutex);
 
@@ -88,7 +88,7 @@ sys_mutex_unlock(sys_mutex_t *pxMutex)
  * @param pxMutex pointer of mutex to delete
  */
 void
-sys_mutex_free(sys_mutex_t *pxMutex)
+disabled_sys_mutex_free(sys_mutex_t *pxMutex)
 {
   LWIP_DEBUGF(ESP_THREAD_SAFE_DEBUG, ("sys_mutex_free: m=%p\n", *pxMutex));
   vSemaphoreDelete(*pxMutex);
@@ -105,7 +105,7 @@ sys_mutex_free(sys_mutex_t *pxMutex)
  * @return err_t
  */
 err_t
-sys_sem_new(sys_sem_t *sem, u8_t count)
+disabled_sys_sem_new(sys_sem_t *sem, u8_t count)
 {
   LWIP_ASSERT("initial_count invalid (neither 0 nor 1)",
              (count == 0) || (count == 1));
@@ -131,7 +131,7 @@ sys_sem_new(sys_sem_t *sem, u8_t count)
  * @param sem pointer of the semaphore
  */
 void
-sys_sem_signal(sys_sem_t *sem)
+disabled_sys_sem_signal(sys_sem_t *sem)
 {
   BaseType_t ret = xSemaphoreGive(*sem);
   /* queue full is OK, this is a signal only... */
@@ -143,7 +143,7 @@ sys_sem_signal(sys_sem_t *sem)
 /*-----------------------------------------------------------------------------------*/
 // Signals a semaphore (from ISR)
 int
-sys_sem_signal_isr(sys_sem_t *sem)
+disabled_sys_sem_signal_isr(sys_sem_t *sem)
 {
     BaseType_t woken = pdFALSE;
     xSemaphoreGiveFromISR(*sem, &woken);
@@ -158,7 +158,7 @@ sys_sem_signal_isr(sys_sem_t *sem)
  * @return SYS_ARCH_TIMEOUT when timeout, 0 otherwise
  */
 u32_t
-sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
+disabled_sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
 {
   BaseType_t ret;
 
@@ -191,7 +191,7 @@ sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
  * @param sem pointer of the semaphore to delete
  */
 void
-sys_sem_free(sys_sem_t *sem)
+disabled_sys_sem_free(sys_sem_t *sem)
 {
   vSemaphoreDelete(*sem);
   *sem = NULL;
@@ -205,7 +205,7 @@ sys_sem_free(sys_sem_t *sem)
  * @return ERR_OK on success, ERR_MEM when out of memory
  */
 err_t
-sys_mbox_new(sys_mbox_t *mbox, int size)
+disabled_sys_mbox_new(sys_mbox_t *mbox, int size)
 {
   *mbox = mem_malloc(sizeof(struct sys_mbox_s));
   if (*mbox == NULL){
@@ -232,7 +232,7 @@ sys_mbox_new(sys_mbox_t *mbox, int size)
  * @param msg pointer of the message to send
  */
 void
-sys_mbox_post(sys_mbox_t *mbox, void *msg)
+disabled_sys_mbox_post(sys_mbox_t *mbox, void *msg)
 {
   BaseType_t ret = xQueueSendToBack((*mbox)->os_mbox, &msg, portMAX_DELAY);
   LWIP_ASSERT("mbox post failed", ret == pdTRUE);
@@ -247,7 +247,7 @@ sys_mbox_post(sys_mbox_t *mbox, void *msg)
  * @return ERR_OK on success, ERR_MEM when mailbox is full
  */
 err_t
-sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
+disabled_sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 {
   err_t xReturn;
 
@@ -271,7 +271,7 @@ sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
  *          ERR_NEED_SCHED when high priority task wakes up
  */
 err_t
-sys_mbox_trypost_fromisr(sys_mbox_t *mbox, void *msg)
+disabled_sys_mbox_trypost_fromisr(sys_mbox_t *mbox, void *msg)
 {
   BaseType_t ret;
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -297,7 +297,7 @@ sys_mbox_trypost_fromisr(sys_mbox_t *mbox, void *msg)
  * @return SYS_ARCH_TIMEOUT when timeout, 0 otherwise
  */
 u32_t
-sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
+disabled_sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 {
   BaseType_t ret;
   void *msg_dummy;
@@ -332,7 +332,7 @@ sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
  * @return SYS_MBOX_EMPTY if mailbox is empty, 1 otherwise
  */
 u32_t
-sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
+disabled_sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
   BaseType_t ret;
   void *msg_dummy;
@@ -356,7 +356,7 @@ sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
  * @param mbox pointer of the mailbox to delete
  */
 void
-sys_mbox_free(sys_mbox_t *mbox)
+disabled_sys_mbox_free(sys_mbox_t *mbox)
 {
   if ((NULL == mbox) || (NULL == *mbox)) {
     return;
@@ -382,7 +382,7 @@ sys_mbox_free(sys_mbox_t *mbox)
  * @return thread ID
  */
 sys_thread_t
-sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
+disabled_sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 {
   TaskHandle_t rtos_task;
   BaseType_t ret;
@@ -407,7 +407,7 @@ sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize
  *
  */
 void
-sys_init(void)
+disabled_sys_init(void)
 {
   if (!g_lwip_protect_mutex) {
     if (ERR_OK != sys_mutex_new(&g_lwip_protect_mutex)) {
@@ -416,7 +416,7 @@ sys_init(void)
   }
 
   // Create the pthreads key for the per-thread semaphore storage
-  pthread_key_create(&sys_thread_sem_key, sys_thread_sem_free);
+  pthread_key_create(&sys_thread_sem_key, disabled_sys_thread_sem_free);
 
   esp_vfs_lwip_sockets_register();
 }
@@ -427,7 +427,7 @@ sys_init(void)
  * @return system tick counts
  */
 u32_t
-sys_jiffies(void)
+disabled_sys_jiffies(void)
 {
   return xTaskGetTickCount();
 }
@@ -438,7 +438,7 @@ sys_jiffies(void)
  * @return current time
  */
 u32_t
-sys_now(void)
+disabled_sys_now(void)
 {
   return xTaskGetTickCount() * portTICK_PERIOD_MS;
 }
@@ -451,7 +451,7 @@ sys_now(void)
  * @return previous protection level
  */
 sys_prot_t
-sys_arch_protect(void)
+disabled_sys_arch_protect(void)
 {
   if (unlikely(!g_lwip_protect_mutex)) {
     sys_mutex_new(&g_lwip_protect_mutex);
@@ -466,7 +466,7 @@ sys_arch_protect(void)
  * @param pval protection level
  */
 void
-sys_arch_unprotect(sys_prot_t pval)
+disabled_sys_arch_unprotect(sys_prot_t pval)
 {
   LWIP_UNUSED_ARG(pval);
   sys_mutex_unlock(&g_lwip_protect_mutex);
@@ -476,7 +476,7 @@ sys_arch_unprotect(sys_prot_t pval)
  * get per thread semaphore
  */
 sys_sem_t*
-sys_thread_sem_get(void)
+disabled_sys_thread_sem_get(void)
 {
   sys_sem_t *sem = pthread_getspecific(sys_thread_sem_key);
 
@@ -488,7 +488,7 @@ sys_thread_sem_get(void)
 }
 
 static void
-sys_thread_sem_free(void* data) // destructor for TLS semaphore
+disabled_sys_thread_sem_free(void* data) // destructor for TLS semaphore
 {
   sys_sem_t *sem = (sys_sem_t*)(data);
 
@@ -504,7 +504,7 @@ sys_thread_sem_free(void* data) // destructor for TLS semaphore
 }
 
 sys_sem_t*
-sys_thread_sem_init(void)
+disabled_sys_thread_sem_init(void)
 {
   sys_sem_t *sem = (sys_sem_t*)mem_malloc(sizeof(sys_sem_t*));
 
@@ -525,23 +525,23 @@ sys_thread_sem_init(void)
 }
 
 void
-sys_thread_sem_deinit(void)
+disabled_sys_thread_sem_deinit(void)
 {
   sys_sem_t *sem = pthread_getspecific(sys_thread_sem_key);
   if (sem != NULL) {
-    sys_thread_sem_free(sem);
+    disabled_sys_thread_sem_free(sem);
     pthread_setspecific(sys_thread_sem_key, NULL);
   }
 }
 
 void
-sys_delay_ms(uint32_t ms)
+disabled_sys_delay_ms(uint32_t ms)
 {
   vTaskDelay(ms / portTICK_PERIOD_MS);
 }
 
 bool
-sys_thread_tcpip(sys_thread_core_lock_t type)
+disabled_sys_thread_tcpip(sys_thread_core_lock_t type)
 {
     static sys_thread_t lwip_task = NULL;
 #if LWIP_TCPIP_CORE_LOCKING
